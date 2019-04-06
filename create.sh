@@ -11,7 +11,10 @@ aws emr create-cluster \
 --ec2-attributes InstanceProfile=EMR_EC2_DefaultRole,KeyName=$KEYPAIR \
 --instance-groups InstanceGroupType=MASTER,InstanceCount=1,InstanceType=$MASTER_INSTANCE \
 InstanceGroupType=CORE,InstanceCount=4,InstanceType=$WORKER_INSTANCE \
-# --log-uri 's3n://<YOUR-S3-BUCKET-FOR-EMR-LOGS>/' \
 --bootstrap-actions Name='install-pillow-boto3',Path=s3://aws-dl-emr-bootstrap/mxnet-spark-demo-bootstrap.sh \
 --region us-east-1 \
 --name "NACHO"
+
+
+# Things that you could add but I don't want to
+# --log-uri 's3n://<YOUR-S3-BUCKET-FOR-EMR-LOGS>/' \
