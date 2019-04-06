@@ -19,9 +19,10 @@ class Singleton(type):
             cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
         return cls._instances[cls]
 
+
 class MXModel(object):
     """
-    This is a singleton class that just holds the loaded mxnet model in the module object
+    This is a singleton class that just holds the loaded model in the module object
     We don't want to load the model for every inference when called from the map method
     """
     __metaclass__ = Singleton
@@ -30,62 +31,27 @@ class MXModel(object):
     synsets = None
  
     
-    def __init__(self, sym_url, param_url, synset_url, batch_size):
-        (s_fname, p_fname, synset_fname) = self.download_model_files(sym_url, param_url, synset_url)
-        MXModel.synsets = self.load_synset(synset_fname)
-        MXModel.mod = self.init_module(s_fname, p_fname, batch_size)
+    def __init__(self, model_url, batch_size):
+        model_fname = self.download_model_files(model_url)
+        MXModel.mod = self.init_module(model_fname, batch_size)
         MXModel.model_loaded = True
 
-    def download_model_files(self, sym_url, param_url, synset_url):
+
+    def download_model_files(self, model):
         """
         Download model files from the given urls to local files    
         """    
-        logger.info('download_model_files: sym_url:%s, param_url:%s, synset_url:%s' % (sym_url, param_url, synset_url))
-    
-        import mxnet as mx
-        s_fname = mx.test_utils.download(sym_url, overwrite=False)
-        p_fname = mx.test_utils.download(param_url, overwrite=False)
-        synset_fname = mx.test_utils.download(synset_url, overwrite=False)
-        
+        logger.info('download_model_files: model:%s' % (model))
+        import tensorflow as tf
+        s_fname = mx.test_utils.download(model, overwrite=False)
         return s_fname, p_fname, synset_fname
 
-    def load_synset(self, synset_fname):
-        logger.debug("load_synset: %s"%(synset_fname))
-        
-        with open(synset_fname, 'r') as f:
-            synsets = [l.strip() for l in f]
-        return synsets
-
-    def init_module(self, s_fname, p_fname, batch_size):
+    def init_module(self, model_fname, batch_size):
         logger.info("initializing model")
-        
-        import mxnet as mx        
-        #load the symbol file
-        sym = mx.symbol.load(s_fname)
-        
-        #load parameters
-        save_dict = mx.nd.load(p_fname)
-        
-        arg_params = {}
-        aux_params = {}
-        
-        for k, v in save_dict.items():
-            tp, name = k.split(':', 1)
-            if tp == 'arg':
-                arg_params[name] = v
-            if tp == 'aux':
-                aux_params[name] = v
-        
-        mod = mx.mod.Module(symbol=sym)
-        
-        #bind data shapes and label for this example we will assume the image to be of size 224x224x3
-        mod.bind(for_training = False, data_shapes=[('data', (batch_size,3,224,224))],
-                 label_shapes = None)
-        #set parameters
-        mod.set_params(arg_params, aux_params, allow_missing=True)
-        
+        import tensorflow as tf
         return mod
-    
+
+
 def predict(img_batch, args):
     """
     Run predication on batch of images in 4-D numpy array format and return the top_5 probability along with their classes
